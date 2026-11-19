@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>微电网控制技术仿真系统（第4章） | 刘瑜程 202410132030</title>
+<style>
+  :root {
+    --bg:#0b1220; --panel:#101a2c; --panel2:#14203a; --border:#1f2f4d;
+    --text:#e6edf7; --muted:#8fa3c0; --primary:#2f81f7; --green:#2ecc71;
+    --red:#ff5f57; --yellow:#f5b942; --cyan:#21c7d0; --orange:#ff8c42; --purple:#a78bfa;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:"Microsoft YaHei","PingFang SC",sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+  header{display:flex;align-items:center;justify-content:space-between;padding:14px 24px;
+    background:linear-gradient(90deg,#0d1730 0%,#14244a 60%,#0d1730 100%);
+    border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100}
+  .brand{display:flex;align-items:center;gap:14px}
+  .logo{width:42px;height:42px;border-radius:10px;background:linear-gradient(135deg,var(--primary),var(--cyan));display:flex;align-items:center;justify-content:center;font-size:22px}
+  .brand h1{font-size:19px;letter-spacing:1px}
+  .brand p{font-size:12px;color:var(--muted);margin-top:2px}
+  .user-badge{display:flex;align-items:center;gap:10px;background:var(--panel2);border:1px solid var(--border);padding:8px 14px;border-radius:12px}
+  .avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--green),var(--cyan));display:flex;align-items:center;justify-content:center;font-weight:bold;color:#06202a}
+  .user-badge .name{font-size:14px;font-weight:bold}
+  .user-badge .id{font-size:12px;color:var(--muted)}
+
+  .layout{display:flex;min-height:calc(100vh - 70px)}
+  nav{width:230px;background:var(--panel);border-right:1px solid var(--border);padding:16px 10px;flex-shrink:0}
+  nav .nav-title{font-size:12px;color:var(--muted);padding:8px 12px;letter-spacing:2px}
+  nav a{display:flex;align-items:center;gap:10px;padding:11px 14px;margin:4px 0;color:var(--muted);text-decoration:none;border-radius:10px;font-size:14px;transition:.2s}
+  nav a:hover{background:var(--panel2);color:var(--text)}
+  nav a.active{background:linear-gradient(90deg,rgba(47,129,247,.25),transparent);color:#fff;border-left:3px solid var(--primary)}
+  main{flex:1;padding:20px 24px;min-width:0}
+  section.page{display:none;animation:fade .3s}
+  section.page.active{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+  .page-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px}
+  .page-head h2{font-size:20px}
+  .tag{font-size:11px;background:rgba(46,204,113,.15);color:var(--green);padding:3px 10px;border-radius:20px;margin-left:10px;vertical-align:middle}
+  .sub{color:var(--muted);font-size:13px;margin-bottom:16px}
+
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:16px 18px;margin-bottom:16px}
+  .card h3{font-size:15px;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+  .card h3::before{content:"";width:4px;height:16px;background:var(--primary);border-radius:2px}
+  .formula{background:var(--panel2);border:1px dashed var(--cyan);border-radius:10px;padding:12px 16px;font-size:16px;color:var(--cyan);margin:10px 0;text-align:center}
+  .formula .no{color:var(--muted);font-size:12px}
+
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+  .chip{background:var(--panel2);border:1px solid var(--border);color:var(--muted);padding:7px 14px;border-radius:20px;cursor:pointer;font-size:13px;transition:.2s}
+  .chip:hover{color:var(--text);border-color:var(--primary)}
+  .chip.on{background:rgba(47,129,247,.2);color:#fff;border-color:var(--primary)}
+
+  .flow-head{margin-bottom:10px}
+  .flow-head .ft{font-size:15px;font-weight:bold}
+  .flow-head .fd{font-size:13px;color:var(--muted);margin-top:4px;line-height:1.7}
+  .flow-head .note{display:inline-block;font-size:11px;color:var(--orange);border:1px dashed var(--orange);border-radius:6px;padding:2px 8px;margin-top:6px}
+
+  .flow-params{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:10px}
+  .flow-params .pr{background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:8px 14px;font-size:13px;color:var(--muted)}
+  .flow-params input[type=range]{vertical-align:middle;margin-left:8px;accent-color:var(--primary);width:140px}
+  .flow-params b{color:var(--cyan);margin-left:6px;min-width:52px;display:inline-block}
+
+  .flow-actions{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+  .btn{background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:9px 20px;border-radius:10px;cursor:pointer;font-size:14px}
+  .btn.primary{background:linear-gradient(135deg,var(--primary),#1a5fd0);border:none}
+  .btn.primary:hover{filter:brightness(1.15)}
+  .btn:disabled{opacity:.45;cursor:not-allowed}
+  .fp{font-size:13px;color:var(--muted);display:flex;align-items:center;gap:8px}
+  .fp input{accent-color:var(--orange);width:140px}
+  .fp b{color:var(--orange);min-width:38px}
+
+  .flow-svg svg{width:100%;height:auto;display:block}
+  .log{background:#0a101d;border:1px solid var(--border);border-radius:10px;padding:12px 14px;font-size:12.5px;line-height:1.9;max-height:200px;overflow-y:auto;margin-top:12px;color:var(--muted)}
+  .log .ok{color:var(--green)} .log .warn{color:var(--orange)} .log .err{color:var(--red)} .log .info{color:var(--cyan)}
+  .mono{font-family:Consolas,Menlo,monospace}
+
+  /* ===== 流程图 SVG 样式 ===== */
+  .edg{stroke:#5b7296;stroke-width:1.6;fill:none}
+  .loop{stroke:var(--orange);stroke-width:1.6;fill:none;stroke-dasharray:6 4}
+  .lab{fill:#a9bbd8;font-size:12px;font-weight:bold}
+  .labo{fill:var(--orange);font-size:11px}
+  .n{fill:#182540;stroke:#4a628f;stroke-width:1.6;cursor:default;transition:.25s}
+  .n.start,.n.end{fill:rgba(46,204,113,.12);stroke:var(--green)}
+  .n.cur{stroke:var(--cyan);stroke-width:2.5;filter:drop-shadow(0 0 6px rgba(33,199,208,.8))}
+  .n.done{stroke:var(--green);fill:rgba(46,204,113,.10)}
+  .ntxt{fill:#dce6f5;font-size:13px;text-anchor:middle;dominant-baseline:middle}
+  .bwarn{fill:rgba(255,140,66,.10);stroke:var(--orange);stroke-width:1.5;transition:.25s}
+  .bwarn .ntxt{fill:#ffc59a;font-size:12.5px}
+  .bwarn.cur{stroke-width:2.5;filter:drop-shadow(0 0 6px rgba(255,140,66,.8))}
+  .bwarn.taken{fill:rgba(255,140,66,.28);stroke:var(--orange)}
+
+  /* ===== 结构图 SVG ===== */
+  .struct-svg svg{width:100%;height:auto}
+  .sbox{fill:#182540;stroke:#6f89b8;stroke-width:1.6;cursor:pointer;transition:.2s}
+  .sbox:hover{stroke:var(--cyan);filter:drop-shadow(0 0 5px rgba(33,199,208,.6))}
+  .sbox.hl{stroke:var(--green);stroke-width:2.6;fill:rgba(46,204,113,.14);filter:drop-shadow(0 0 6px rgba(46,204,113,.7))}
+  .sbox.inner{fill:#101a2c;stroke:#4a628f}
+  .stxt{fill:#dce6f5;font-size:13px;text-anchor:middle;dominant-baseline:middle;pointer-events:none}
+  .stxt.small{font-size:11.5px;fill:#a9bbd8}
+  .sw{fill:#8fa3c0;stroke:#c7d6ee;stroke-width:1}
+  .bus{stroke:#c7d6ee;stroke-width:2.4}
+  .wire{stroke:#5b7296;stroke-width:1.5;fill:none}
+  .dash{stroke:#5b7296;stroke-width:1.4;fill:none;stroke-dasharray:5 4}
+  .sig{fill:#f5b942;font-size:11.5px}
+  .circ{fill:#182540;stroke:#6f89b8;stroke-width:1.8}
+  .info-panel{background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:12px 16px;font-size:13.5px;color:var(--muted);margin-top:12px;min-height:52px;line-height:1.8}
+  .info-panel b{color:var(--cyan)}
+  .mode-btns{display:flex;gap:10px;margin-top:10px;flex-wrap:wrap}
+
+  /* ===== 状态机 ===== */
+  .sm-svg svg{width:100%;height:auto}
+  .state{fill:#182540;stroke:#6f89b8;stroke-width:1.8;cursor:default;transition:.3s}
+  .state.cur{stroke:var(--cyan);stroke-width:3;fill:rgba(33,199,208,.15);filter:drop-shadow(0 0 10px rgba(33,199,208,.8))}
+  .state.visited{stroke:var(--green);stroke-width:2}
+  .sm-events{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
+  .ev{background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:9px 16px;border-radius:10px;cursor:pointer;font-size:13.5px;transition:.2s}
+  .ev:hover{border-color:var(--cyan);color:var(--cyan)}
+  .trans{stroke:#5b7296;stroke-width:1.5;fill:none}
+  .trans.pulse{stroke:var(--cyan);stroke-width:3;filter:drop-shadow(0 0 6px rgba(33,199,208,.9))}
+  .tlab{fill:#a9bbd8;font-size:11px;text-anchor:middle;paint-order:stroke;stroke:#0b1220;stroke-width:3}
+
+  footer{text-align:center;padding:18px;color:var(--muted);font-size:12px;border-top:1px solid var(--border)}
+  footer b{color:var(--text)}
+  @media (max-width:1000px){nav{display:none}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="logo">🎛️</div>
+    <div>
+      <h1>微电网控制技术仿真系统 · 第 4 章框图交互平台</h1>
+      <p>Microgrid Control Simulation Platform · 主从控制 / 对等控制 / 运行状态切换</p>
+    </div>
+  </div>
+  <div class="user-badge">
+    <div class="avatar">刘</div>
+    <div>
+      <div class="name">刘瑜程</div>
+      <div class="id">202410132030</div>
+    </div>
+  </div>
+</header>
+
+<div class="layout">
+  <nav>
+    <div class="nav-title">章节导航</div>
+    <a class="active" data-page="struct" href="javascript:;">🧩 控制结构（图4.1–4.3）</a>
+    <a data-page="power" href="javascript:;">🔁 计划与功率控制（图4.4–4.6）</a>
+    <a data-page="volt" href="javascript:;">⚡ 无功电压与离网控制（图4.7–4.9）</a>
+    <a data-page="sm" href="javascript:;">🌐 运行状态机（图4.10）</a>
+    <a data-page="switch" href="javascript:;">🔀 状态切换控制流程（图4.11–4.20）</a>
+  </nav>
+
+  <main>
+    <!-- ============ 控制结构 ============ -->
+    <section class="page active" id="page-struct">
+      <div class="page-head"><h2>微电网控制结构交互图 <span class="tag">图 4.1 – 4.3</span></h2></div>
+      <div class="sub">点击切换三种控制结构；图中任意图框均可点击查看说明；主从结构可切换「并网 / 离网」观察主控制器控制方式切换。</div>
+      <div class="card">
+        <div class="chips" id="struct-tabs">
+          <button class="chip on" data-s="0">图4.1 主从控制（主电源为主控制器）</button>
+          <button class="chip" data-s="1">图4.2 主从控制（监控系统为主控制器）</button>
+          <button class="chip" data-s="2">图4.3 对等控制（Droop）</button>
+        </div>
+        <div class="struct-svg" id="struct-view"></div>
+        <div class="mode-btns" id="struct-mode"></div>
+        <div class="info-panel" id="struct-info">💡 点击图中任意方框查看说明；使用上方按钮切换运行模式。</div>
+      </div>
+    </section>
+
+    <!-- ============ 计划与功率控制 ============ -->
+    <section class="page" id="page-power">
+      <div class="page-head"><h2>储能与功率控制流程仿真 <span class="tag">图 4.4 – 4.6</span></h2></div>
+      <div class="sub">选择流程图后点击「运行仿真」，系统将按原图逻辑逐步执行；可通过参数滑块与异常注入概率观察不同分支走向。</div>
+      <div class="card" id="panel-power"></div>
+    </section>
+
+    <!-- ============ 无功电压与离网控制 ============ -->
+    <section class="page" id="page-volt">
+      <div class="page-head"><h2>无功电压与离网功率控制流程仿真 <span class="tag">图 4.7 – 4.9</span></h2></div>
+      <div class="sub">离网运行时调节分布式电源无功功率，应首先保证有功出力，分布式电源可用无功容量为：</div>
+      <div class="formula">Q<sub>R</sub> = Σ<sub>i=1..N</sub> √( S<sub>Ni</sub><sup>2</sup> − P<sub>i</sub><sup>2</sup> ) &nbsp;<span class="no">式 (4.4)</span></div>
+      <div class="sub">式中 S<sub>Ni</sub> 为第 i 个分布式电源视在功率，P<sub>i</sub> 为当前有功功率。无功调节顺序依次为：储能单元 → 同步电机电源 → 可控分布式电源。</div>
+      <div class="card" id="panel-volt"></div>
+    </section>
+
+    <!-- ============ 运行状态机 ============ -->
+    <section class="page" id="page-sm">
+      <div class="page-head"><h2>微电网运行状态切换状态机 <span class="tag">图 4.10</span></h2></div>
+      <div class="sub">通过相应控制命令，微电网可以在各运行状态之间相互切换。点击下方事件按钮驱动状态转移，观察转移路径与当前状态。</div>
+      <div class="card">
+        <div class="sm-svg" id="sm-view"></div>
+        <div class="sm-events" id="sm-events"></div>
+        <div class="log mono" id="sm-log"></div>
+      </div>
+    </section>
+
+    <!-- ============ 状态切换控制流程 ============ -->
+    <section class="page" id="page-switch">
+      <div class="page-head"><h2>运行状态切换控制流程仿真 <span class="tag">图 4.11 – 4.20</span></h2></div>
+      <div class="sub">并网 / 离网 / 停运之间的各种切换控制策略流程，均可单步仿真：合闸、分闸失败或开关拒动等异常分支由「异常分支触发概率」控制。</div>
+      <div class="card" id="panel-switch"></div>
+    </section>
+  </main>
+</div>
+
+<footer>
+  《微电网运行与控制的关键技术》第 4 章框图交互仿真 · 设计制作：<b>刘瑜程（202410132030）</b> · 仅用于教学演示
+</footer>
+
+<script>
+/* ============================================================
+   一、控制结构交互图（图 4.1 / 4.2 / 4.3）
+============================================================ */
+const SINFO = {
+  grid:'<b>主网 / 配电网</b>：外部电网，微电网并网运行时的电压与频率支撑来源。',
+  sw:'<b>并网点开关</b>（图例灰色填充）：微电网与外部电网之间的联络断路器，是运行状态切换控制的核心被控对象。',
+  mc:'<b>主控制器</b>：主从控制中维持微电网电压与频率的控制器。并网运行时采用 PQ 控制；离网运行时切换为 Vf（恒压恒频）控制。',
+  vf:'<b>Vf 控制</b>：恒压恒频控制。离网运行时由主电源承担，为全微电网建立电压与频率。',
+  pq:'<b>PQ 控制</b>：恒功率控制。按主控层下发的 P、Q 参考值运行，并网运行时采用。',
+  dgm:'<b>DG 主电源</b>：作为主控制器执行主体的分布式电源，容量大、可控性强（储能、微型燃气轮机等）。',
+  sc:'<b>从控制器</b>：跟随主控制器，采用 PQ 控制按给定参考值运行。',
+  dg:'<b>分布式电源 DG</b>（图例空心框）：光伏、风电、微型燃气轮机、储能等，经换流器接入微电网母线。',
+  scada:'<b>微电网监控系统（主控制器）</b>：集中式主控制器，根据并网点电气量向各从控制器下发 V、f 或 P、Q 参考值。',
+  elec:'<b>并网点电气量及开关位置信号</b>：采集并网点电压、频率与开关状态，作为主控制器决策依据。',
+  vfreq:'<b>V、f 参考值</b>：监控系统下发至主电源从控制器的电压频率给定。',
+  pref:'<b>P、Q 参考值</b>：监控系统下发至各从控制器的功率给定。',
+  droop:'<b>Droop 控制</b>：下垂控制，模拟同步发电机 P-f / Q-V 外特性。各 DG 地位对等、自治运行，依据本地测量自动分配功率，无需通信互联。',
+  dcac:'<b>DC/AC 换流器</b>：逆变器，将分布式电源直流电能变换为交流接入微电网母线。',
+  meas:'<b>测量信息</b>：DG 本地电压、电流、功率实时测量，供下垂控制器调节。'
+};
+function box(x,y,w,h,label,info,cls=''){return `<rect class="sbox ${cls}" data-info="${info||label}" x="${x}" y="${y}" width="${w}" height="${h}" rx="6"/><text class="stxt" x="${x+w/2}" y="${y+h/2}">${label}</text>`;}
+function innerBox(x,y,w,h,label,info){return `<rect class="sbox inner" data-info="${info}" x="${x}" y="${y}" width="${w}" height="${h}" rx="4"/><text class="stxt small" x="${x+w/2}" y="${y+h/2}">${label}</text>`;}
+function txt(x,y,t,cls='stxt small'){return `<text class="${cls}" x="${x}" y="${y}">${t}</text>`;}
+
+const STRUCTS=[
+{ title:'图 4.1　以主电源控制器为主控制器的主从控制结构图',
+  mode:'master',
+  svg:`<svg viewBox="0 0 860 470">
+    <rect x="620" y="12" width="16" height="12" class="sw"/><text class="stxt small" x="730" y="20">并网点开关</text>
+    <rect x="620" y="36" width="16" height="12" class="sbox inner"/><text class="stxt small" x="746" y="44">DG 分布式电源</text>
+    <circle class="circ" cx="90" cy="70" r="26" data-info="grid"/><text class="stxt" x="90" y="70">~</text>
+    ${txt(90,110,'主网')}
+    <rect class="sw" x="62" y="150" width="56" height="16" data-info="sw"/>
+    <line class="wire" x1="90" y1="96" x2="90" y2="150"/>
+    <line class="wire" x1="90" y1="166" x2="90" y2="230"/>
+    <rect class="sbox" x="240" y="55" width="310" height="140" rx="8" data-info="mc"/>
+    ${txt(268,80,'主控制器','stxt')}
+    ${txt(272,102,'离网')}
+    ${txt(272,158,'并网')}
+    ${innerBox(330,72,150,36,'Vf 控制','vf')}
+    ${innerBox(330,128,150,36,'PQ 控制','pq')}
+    <path class="dash" d="M295,100 L330,90"/><path class="dash" d="M295,158 L330,146"/>
+    ${box(600,85,170,60,'DG 主电源','dgm')}
+    <path class="dash" d="M550,110 L600,112"/>
+    <line class="bus" x1="40" y1="230" x2="830" y2="230"/>
+    <path class="dash" d="M395,195 L395,230"/>
+    <path class="wire" d="M90,230 L90,230"/>
+    ${box(50,300,120,56,'DG1','dg')}
+    ${box(205,296,180,64,'从控制器','sc')}
+    ${innerBox(228,312,134,32,'PQ 控制','pq')}
+    <path class="dash" d="M170,328 L205,328"/>
+    <line class="wire" x1="110" y1="230" x2="110" y2="300"/>
+    <line class="wire" x1="295" y1="296" x2="295" y2="230"/>
+    ${box(480,300,110,56,'DGn','dg')}
+    ${box(625,296,190,64,'从控制器','sc')}
+    ${innerBox(650,312,140,32,'PQ 控制','pq')}
+    <path class="dash" d="M590,328 L625,328"/>
+    <line class="wire" x1="535" y1="230" x2="535" y2="300"/>
+    <line class="wire" x1="720" y1="296" x2="720" y2="230"/>
+  </svg>`},
+{ title:'图 4.2　以微电网监控系统为主控制器的主从控制结构',
+  mode:'master',
+  svg:`<svg viewBox="0 0 860 490">
+    <rect x="640" y="10" width="16" height="12" class="sw"/><text class="stxt small" x="750" y="18">并网点开关</text>
+    <rect x="640" y="32" width="16" height="12" class="sbox inner"/><text class="stxt small" x="766" y="40">DG 分布式电源</text>
+    <circle class="circ" cx="80" cy="60" r="24" data-info="grid"/><text class="stxt" x="80" y="60">~</text>
+    ${txt(80,100,'主网')}
+    <rect class="sw" x="52" y="130" width="56" height="16" data-info="sw"/>
+    <line class="wire" x1="80" y1="84" x2="80" y2="130"/>
+    <line class="wire" x1="80" y1="146" x2="80" y2="260"/>
+    ${box(30,190,190,80,'并网点电气量<br>及开关位置信号','elec')}
+    ${box(270,190,190,80,'监控系统<br>（主控制器）','scada')}
+    ${box(510,95,200,100,'从控制器','sc')}
+    ${innerBox(528,108,164,32,'Vf 控制','vf')}
+    ${innerBox(528,148,164,32,'PQ 控制','pq')}
+    ${box(750,105,100,80,'DG 主电源','dgm')}
+    <path class="dash" d="M220,230 L270,230"/><text class="sig" x="245" y="222">V、f 参考值</text>
+    <path class="dash" d="M460,225 L510,180"/><text class="sig" x="470" y="205">指定主电源</text>
+    <path class="dash" d="M710,145 L750,145"/>
+    <line class="bus" x1="30" y1="260" x2="830" y2="260"/>
+    <path class="dash" d="M365,270 L365,300"/><text class="sig" x="400" y="292">P、Q 参考值</text>
+    <path class="dash" d="M610,195 L610,260"/>
+    ${box(50,340,110,54,'DG1','dg')}
+    ${box(195,336,170,62,'从控制器','sc')}
+    ${innerBox(218,352,124,30,'PQ 控制','pq')}
+    <path class="dash" d="M160,367 L195,367"/>
+    <line class="wire" x1="105" y1="260" x2="105" y2="340"/>
+    <line class="wire" x1="280" y1="336" x2="280" y2="260"/>
+    <text class="stxt small" x="470" y="372">…</text>
+    ${box(520,340,110,54,'DGn','dg')}
+    ${box(665,336,170,62,'从控制器','sc')}
+    ${innerBox(688,352,124,30,'PQ 控制','pq')}
+    <path class="dash" d="M630,367 L665,367"/>
+    <line class="wire" x1="575" y1="260" x2="575" y2="340"/>
+    <line class="wire" x1="750" y1="336" x2="750" y2="260"/>
+  </svg>`},
+{ title:'图 4.3　对等控制的微电网结构图',
+  mode:'peer',
+  svg:`<svg viewBox="0 0 860 480">
+    <rect x="640" y="10" width="16" height="12" class="sw"/><text class="stxt small" x="750" y="18">并网点开关</text>
+    <rect x="640" y="32" width="16" height="12" class="sbox inner"/><text class="stxt small" x="766" y="40">DG 分布式电源</text>
+    <circle class="circ" cx="100" cy="60" r="24" data-info="grid"/><text class="stxt" x="100" y="60">~</text>
+    ${txt(100,100,'配电网')}
+    <rect class="sw" x="72" y="128" width="56" height="16" data-info="sw"/>
+    <line class="wire" x1="100" y1="84" x2="100" y2="128"/>
+    <line class="wire" x1="100" y1="144" x2="100" y2="210"/>
+    <line class="bus" x1="30" y1="210" x2="830" y2="210"/>
+    <path class="dash" d="M655,210 L655,44"/><text class="sig" x="600" y="30">并网点测量信息</text>
+    <!-- DG1 -->
+    ${box(40,290,110,48,'DG1','dg')}
+    ${box(40,240,110,42,'DC/AC','dcac')}
+    ${box(170,240,130,42,'Droop 控制','droop')}
+    <path class="wire" x1="0" x2="0" y1="0" y2="0" d="M95,290 L95,282"/>
+    <path class="wire" d="M95,240 L95,232"/>
+    <path class="dash" d="M150,261 L170,261"/>
+    <path class="dash" d="M235,240 L235,210"/><text class="sig" x="255" y="232">测量信息</text>
+    <!-- DG2 -->
+    ${box(320,290,110,48,'DG2','dg')}
+    ${box(320,240,110,42,'DC/AC','dcac')}
+    ${box(450,240,130,42,'Droop 控制','droop')}
+    <path class="wire" d="M375,290 L375,282"/>
+    <path class="wire" d="M375,240 L375,232"/>
+    <path class="dash" d="M430,261 L450,261"/>
+    <path class="dash" d="M515,240 L515,210"/><text class="sig" x="535" y="232">测量信息</text>
+    <!-- DGn -->
+    ${box(620,290,110,48,'DGn','dg')}
+    ${box(620,240,110,42,'DC/AC','dcac')}
+    ${box(750,240,100,42,'Droop 控制','droop')}
+    <path class="wire" d="M675,290 L675,282"/>
+    <path class="wire" d="M675,240 L675,232"/>
+    <path class="dash" d="M730,261 L750,261"/>
+    <path class="dash" d="M800,240 L800,210"/>
+    ${txt(430,400,'对等控制：各 DG 具有相等地位，依据本地信息按 Droop 特性自治分配功率')}
+    ${txt(430,424,'（如 CERTS 微电网示范工程采用 3 台完全一致的 60 kW 微型燃气轮机实现对等控制）')}
+  </svg>`}
+];
+let curStruct=0;
+function drawStruct(){
+  const s=STRUCTS[curStruct];
+  document.getElementById('struct-view').innerHTML=s.svg;
+  document.getElementById('struct-mode').innerHTML = s.mode==='master'
+    ? `<button class="btn" onclick="setMode('grid')">并网模式运行</button><button class="btn" onclick="setMode('island')">离网模式运行</button><button class="btn" onclick="setMode('')">复位高亮</button>`
+    : `<span class="sub">对等控制无主控制器：各 DG 均采用 Droop 控制，就地自治，不依赖通信。</span>`;
+  document.querySelectorAll('#struct-view [data-info]').forEach(el=>{
+    el.addEventListener('click',()=>{document.getElementById('struct-info').innerHTML=SINFO[el.dataset.info]||el.dataset.info;});
+  });
+  document.querySelectorAll('#struct-tabs .chip').forEach((c,i)=>c.classList.toggle('on',i===curStruct));
+}
+function setMode(m){
+  document.querySelectorAll('#struct-view .sbox').forEach(e=>e.classList.remove('hl'));
+  if(m==='grid') document.querySelectorAll('#struct-view .sbox').forEach(e=>{if((e.dataset.info==='pq'))e.classList.add('hl');});
+  if(m==='island') document.querySelectorAll('#struct-view .sbox').forEach(e=>{if(e.dataset.info==='vf')e.classList.add('hl');});
+  const info=document.getElementById('struct-info');
+  info.innerHTML = m==='grid' ? '<b>并网模式：</b>主电源及各从控制器均采用 <b>PQ 控制</b>，按调度计划运行，电压频率由大电网支撑（绿色高亮）。'
+    : m==='island' ? '<b>离网模式：</b>主电源切换为 <b>Vf 控制</b>（绿色高亮），建立微电网电压与频率；各从控制器仍为 PQ 控制跟随运行。'
+    : '💡 点击图中任意方框查看说明；使用上方按钮切换运行模式。';
+}
+document.querySelectorAll('#struct-tabs .chip').forEach(c=>c.onclick=()=>{curStruct=+c.dataset.s;drawStruct();});
+drawStruct();
+
+/* ============================================================
+   二、流程图通用引擎（图 4.4–4.9、4.11–4.20）
+============================================================ */
+function initFlowPanel(mount, flows){
+  const root=document.getElementById(mount);
+  let cur=0, timer=null, idx=0, iter=0, FPv=0.15;
+  const q=s=>root.querySelector(s);
+  root.innerHTML=`
+    <div class="chips">${flows.map((f,i)=>`<button class="chip${i===0?' on':''}" data-i="${i}">${f.fig}</button>`).join('')}</div>
+    <div class="flow-head"></div><div class="flow-params"></div>
+    <div class="flow-actions">
+      <button class="btn primary act-run">▶ 运行仿真</button>
+      <button class="btn act-reset">↺ 重置</button>
+      <label class="fp">异常分支触发概率 <input type="range" class="fp-range" min="0" max="60" value="15"><b class="fp-val">15%</b></label>
+    </div>
+    <div class="flow-svg"></div>
+    <div class="log mono"></div>`;
+  root.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{cur=+c.dataset.i;root.querySelectorAll('.chip').forEach((x,i)=>x.classList.toggle('on',i===cur));draw();});
+  q('.fp-range').oninput=e=>{FPv=+e.target.value;q('.fp-val').textContent=FPv+'%';};
+  q('.act-run').onclick=run;
+  q('.act-reset').onclick=()=>{clearTimeout(timer);reset();};
+
+  function params(){const o={};q('.flow-params input').forEach(inp=>o[inp.dataset.k]=+inp.value);return o;}
+  function log(t,cls=''){const el=q('.log');el.innerHTML+=`<div class="${cls}">${t}</div>`;el.scrollTop=el.scrollHeight;}
+  function reset(){clearTimeout(timer);idx=0;iter=0;q('.log').innerHTML='';root.querySelectorAll('.n').forEach(e=>e.classList.remove('cur','done'));root.querySelectorAll('.bwarn').forEach(e=>e.classList.remove('cur','taken'));}
+  function nEl(i){return root.querySelector(`[data-idx="${i}"]`);}
+  function bEl(i){return root.querySelector(`[data-bidx="${i}"]`);}
+
+  function draw(){
+    const f=flows[cur];
+    q('.flow-head').innerHTML=`<div class="ft">${f.fig}　${f.title}</div><div class="fd">${f.desc||''}</div>${f.simplified?'<span class="note">※ 按原图主逻辑简化示意</span>':''}`;
+    q('.flow-params').innerHTML=(f.params||[]).map(p=>`<span class="pr">${p.label}<input type="range" data-k="${p.k}" min="${p.min}" max="${p.max}" value="${p.v}"><b class="pv">${p.v}${p.unit||''}</b></span>`).join('');
+    q('.flow-params').querySelectorAll('input').forEach(inp=>inp.oninput=e=>{e.target.parentElement.querySelector('.pv').textContent=e.target.value+(f.params.find(p=>p.k===e.target.dataset.k).unit||'');});
+    const rowH=92, top=36, n=f.steps.length, H=top+n*rowH+40, W=990, CX=300;
+    f.steps.forEach((st,i)=>{st._cy=top+i*rowH+(st.t==='d'?38:26);st._top=st._cy-(st.t==='d'?38:25);st._bot=st._cy+(st.t==='d'?38:25);});
+    let s=`<svg viewBox="0 0 ${W} ${H}"><defs>
+      <marker id="ar-${mount}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="#8fa3c0"/></marker>
+      <marker id="ao-${mount}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="#ff8c42"/></marker></defs>`;
+    for(let i=0;i<n-1;i++){
+      const a=f.steps[i],b=f.steps[i+1];
+      s+=`<path class="edg" d="M${CX},${a._bot} L${CX},${b._top}" marker-end="url(#ar-${mount})"/>`;
+      if(a.t==='d') s+=`<text class="lab" x="${CX+10}" y="${(a._bot+b._top)/2+4}">${a.main==='N'?'N':'Y'}</text>`;
+    }
+    f.steps.forEach((st,i)=>{
+      if(st.t!=='d'||!st.b)return;
+      const by=st._cy-22, lab=st.main==='N'?'Y':'N';
+      s+=`<path class="edg" d="M${CX+152},${st._cy} L620,${by+22}" marker-end="url(#ar-${mount})"/>`;
+      s+=`<text class="lab" x="${CX+160}" y="${st._cy-10}">${lab}</text>`;
+      s+=`<rect class="bwarn" data-bidx="${i}" x="620" y="${by}" width="310" height="44" rx="8"/><text class="ntxt" x="775" y="${by+22}" style="font-size:12.5px">${st.b.w}</text>`;
+      if(st.b.loopTo!=null){
+        const t=f.steps[st.b.loopTo];
+        s+=`<path class="loop" d="M775,${by+44} L775,${by+60} L950,${by+60} L950,${t._cy} L${CX+158},${t._cy}" marker-end="url(#ao-${mount})"/>`;
+        s+=`<text class="labo" x="905" y="${(by+60+t._cy)/2}">返回 ↺</text>`;
+      }
+    });
+    f.steps.forEach((st,i)=>{
+      let shape;
+      if(st.t==='d') shape=`<polygon class="n" data-idx="${i}" points="${CX},${st._cy-38},${CX+152},${st._cy},${CX},${st._cy+38},${CX-152},${st._cy}"/>`;
+      else if(st.t==='start'||st.t==='end') shape=`<rect class="n ${st.t==='start'?'start':'end'}" data-idx="${i}" x="${CX-70}" y="${st._cy-24}" width="140" height="48" rx="24"/>`;
+      else shape=`<rect class="n" data-idx="${i}" x="${CX-150}" y="${st._cy-25}" width="300" height="50" rx="8"/>`;
+      const fs=st.l.length>18?12:13;
+      s+=shape+`<text class="ntxt" x="${CX}" y="${st._cy+1}" style="font-size:${fs}px">${st.l}</text>`;
+    });
+    s+='</svg>';
+    q('.flow-svg').innerHTML=s;
+    q('.log').innerHTML='';
+  }
+
+  function run(){
+    reset();
+    const f=flows[cur];
+    log(`▶ 开始仿真：${f.fig} ${f.title}`,'info');
+    step();
+  }
+  function step(){
+    const f=flows[cur];
+    iter++;
+    if(iter>80){log('⚠️ 迭代次数超限（循环未收敛），仿真终止','warn');return;}
+    if(idx>=f.steps.length){log('✔ 主流程执行完毕，到达「结束」，控制结束','ok');return;}
+    const st=f.steps[idx], el=nEl(idx);
+    el.classList.add('cur');
+    const P=params();
+    if(st.t==='d'){
+      const useBranch = f.decide ? f.decide(st,P,Math.random)==='b' : (Math.random()*100<FPv);
+      const mainLab=st.main==='N'?'否（N）':'是（Y）', bLab=st.main==='N'?'是（Y）':'否（N）';
+      log(`◈ 判定「${st.l}」→ ${useBranch?'进入分支 '+bLab:'主流程 '+mainLab}`, useBranch?'warn':'info');
+      timer=setTimeout(()=>{
+        el.classList.remove('cur');el.classList.add('done');
+        if(useBranch){
+          const be=bEl(idx); if(be){be.classList.add('taken');}
+          log(`↳ ${st.b.w}`, st.b.loopTo==null?'err':'warn');
+          if(st.b.loopTo!=null){idx=st.b.loopTo;step();}
+          else log('⏹ 异常处理结束，本次控制流程终止','warn');
+        }else{idx++;step();}
+      },560);
+    }else{
+      log(st.t==='start'?'● 开始':(st.t==='end'?'● 结束':'▸ '+st.l));
+      timer=setTimeout(()=>{el.classList.remove('cur');el.classList.add('done');idx++;step();},(st.t==='start'||st.t==='end')?320:560);
+    }
+  }
+  draw();
+}
+
+/* ---------- 流程定义 ---------- */
+const SOC=(s,p)=>p.soc;
+const F44={fig:'图 4.4',title:'储能充放电计划控制流程',
+  desc:'储能单元按调度下发的计划值执行充放电，并对运行状态、充放电越限、日充放电次数、SOC 越限进行逐项校核，不满足要求时告警并修正计划。',
+  params:[{k:'soc',label:'储能 SOC',min:5,max:100,v:62,unit:'%'}],
+  steps:[
+    {t:'start',l:'开始'},
+    {t:'p',l:'接收调度单元下发的充放电计划值指令'},
+    {t:'d',l:'储能单元是否正常运行'},
+    {t:'d',l:'储能单元充放电是否越限',main:'N',b:{w:'告警：充放电越限，重新修正计划曲线'}},
+    {t:'d',l:'日充放电次数是否越限',main:'N',b:{w:'告警：充放电次数越限'}},
+    {t:'d',l:'储能单元充放电是否达到 SOC 下限',main:'N',b:{w:'告警：储能单元出力不满足计划要求'}},
+    {t:'p',l:'下达储能单元充放电计划指令'},
+    {t:'end',l:'结束'}],
+  decide(st,p,r){ if(st.l.includes('充放电是否越限'))return p.soc>95?'b':'m';
+    if(st.l.includes('SOC 下限'))return p.soc<15?'b':'m';
+    return r*100<FP()?'b':'m'; } };
+const F45={fig:'图 4.5',title:'风光储联合功率控制流程',
+  desc:'以储能承担风光功率与计划间的差额：P_M = P_PV + P_WT，越限或 SOC 越限时定值充放电，逐时段滚动修正出力偏差。',
+  params:[{k:'soc',label:'储能 SOC',min:5,max:100,v:70,unit:'%'}],
+  steps:[
+    {t:'start',l:'开始'},
+    {t:'p',l:'接收风光储联合功率控制指令'},
+    {t:'d',l:'储能单元是否可开机'},
+    {t:'p',l:'计算 P_M = P_PV + P_WT（储能基准功率）'},
+    {t:'d',l:'P_M 是否越限',main:'N',b:{w:'按实时功率重新计算目标值并修正',loopTo:3}},
+    {t:'d',l:'日充放电次数是否越限',main:'N',b:{w:'告警：充放电次数越限'}},
+    {t:'d',l:'SOC 是否越限',main:'N',b:{w:'储能单元按定值充放电'}},
+    {t:'p',l:'下达储能单元充放电指令'},
+    {t:'d',l:'是否进入下一预测时段',main:'N',b:{w:'进入下一预测时段，重新计算',loopTo:3}},
+    {t:'d',l:'出力偏差是否越限',main:'N',b:{w:'出力偏差越限，修正目标值',loopTo:3}},
+    {t:'end',l:'结束'}],
+  decide(st,p,r){ if(st.l==='SOC 是否越限')return p.soc>95||p.soc<10?'b':'m';
+    return r*100<FP()?'b':'m'; } };
+const F46={fig:'图 4.6',title:'联络线功率控制流程',
+  desc:'微电网按联络线恒功率控制曲线运行：偏差越限时先由储能单元加权分配，不足时扩展至分布式发电可控单元，直至功率调整结束。',
+  steps:[
+    {t:'start',l:'开始'},
+    {t:'p',l:'读取联络线恒功率控制曲线'},
+    {t:'p',l:'计算 ΔP = P_P − P_set'},
+    {t:'d',l:'功率偏差是否越限',b:{w:'偏差未越限，继续监视',loopTo:1}},
+    {t:'p',l:'储能单元功率加权分配'},
+    {t:'p',l:'储能单元充放电管理'},
+    {t:'d',l:'功率分配是否完成',b:{w:'分布式发电可控单元功率分配',loopTo:3}},
+    {t:'d',l:'功率调整是否结束',main:'N',b:{w:'功率调整结束，返回读取曲线',loopTo:1}},
+    {t:'end',l:'结束'}]};
+const F47={fig:'图 4.7',title:'并网运行无功电压控制策略流程',
+  desc:'并网运行时检测母线电压越限，按「静补 → 储能无功 → 分布式无功可控单元加权分配」的顺序补偿，直至电压恢复正常。',
+  params:[{k:'v',label:'母线电压',min:85,max:115,v:106,unit:'%'}],
+  steps:[
+    {t:'start',l:'开始'},
+    {t:'p',l:'检测微电网母线电压'},
+    {t:'d',l:'电压是否越限',b:{w:'电压未越限，持续监测',loopTo:1}},
+    {t:'d',l:'无静补或已投入',b:{w:'投入静补',loopTo:1}},
+    {t:'p',l:'计算分布式电源无功补偿容量'},
+    {t:'p',l:'储能单元无功补偿'},
+    {t:'d',l:'储能单元补偿容量是否足够',b:{w:'分布式发电无功可控单元加权分配',loopTo:7}},
+    {t:'d',l:'电压是否正常',b:{w:'电压不可继续调节，投入静补',loopTo:1}},
+    {t:'end',l:'结束'}],
+  decide(st,p,r){ if(st.l==='电压是否越限')return (p.v>105||p.v<95)?'m':'b';
+    if(st.l==='电压是否正常')return (p.v>=95&&p.v<=105)?'m':'b';
+    return r*100<FP()?'b':'m'; } };
+const F48={fig:'图 4.8',title:'风光储微电网离网有功功率控制流程',simplified:true,
+  desc:'离网有功平衡主线（按原图简化）：P_n = P_PV + P_WT − P_load，缺额时依次投入柴油发电机、切除可控负荷、储能加权分配；频率越限时告警并停止过渡重要负荷。',
+  steps:[
+    {t:'start',l:'开始'},
+    {t:'p',l:'读取风光出力与负荷功率，计算 P_n = P_PV + P_WT − P_load'},
+    {t:'d',l:'P_n < 0（存在功率缺额）',b:{w:'功率富余：风光降功率 / 投入可控负荷',loopTo:5}},
+    {t:'d',l:'柴油发电机是否运行',b:{w:'投入柴油发电机并增加输出功率',loopTo:4}},
+    {t:'p',l:'切除可控负荷，减小功率缺额'},
+    {t:'p',l:'辅助储能单元功率加权分配'},
+    {t:'p',l:'储能单元充放电管理'},
+    {t:'d',l:'系统频率是否越限',main:'N',b:{w:'告警：重要负荷停止过渡，频率越限处理'}},
+    {t:'end',l:'结束'}]};
+const F49={fig:'图 4.9',title:'离网运行无功电压控制策略流程',
+  desc:'离网运行时电压越限先投静补，再按式(4.4)计算需补偿容量与可用无功功率；容量足够时可控分布式电源加权分配，不足时进行负荷控制。',
+  params:[{k:'v',label:'母线电压',min:85,max:115,v:94,unit:'%'}],
+  steps:[
+    {t:'start',l:'开始'},
+    {t:'d',l:'微电网电压是否越限',b:{w:'电压正常，持续监测',loopTo:1}},
+    {t:'d',l:'无静补或已投入',b:{w:'投入静补',loopTo:1}},
+    {t:'p',l:'计算需补偿容量 Q_R'},
+    {t:'p',l:'计算可用无功功率（式 4.4）'},
+    {t:'d',l:'可用无功功率是否足够',main:'N',b:{w:'可控分布式电源加权分配无功功率',loopTo:3}},
+    {t:'p',l:'负荷控制（切除部分负荷）'},
+    {t:'end',l:'结束'}],
+  decide(st,p,r){ if(st.l==='微电网电压是否越限')return (p.v>105||p.v<95)?'m':'b';
+    return r*100<FP()?'b':'m'; } };
+const warnEnd=w=>({w});
+const F411={fig:'图 4.11',title:'外部电网直供电到停运控制流程',
+  desc:'外部电网直供电状态下停运：先跳开负荷支路开关，再跳开并网点开关；开关拒动时告警并终止控制。',
+  steps:[
+    {t:'start',l:'开始'},
+    {t:'d',l:'是否为外部电网直供电状态',b:{w:'告警：微电网状态异常'}},
+    {t:'p',l:'跳开负荷支路开关'},
+    {t:'d',l:'负荷支路开关是否跳闸',b:{w:'告警：负荷支路开关拒动'}},
+    {t:'p',l:'跳开并网点开关'},
+    {t:'d',l:'并网点开关是否跳闸',b:{w:'告警：并网点开关拒动'}},
+    {t:'end',l:'结束'}]};
+const F412={fig:'图 4.12',title:'微电网停运到外部电网直供电控制策略流程',
+  desc:'停运状态恢复外部直供电：先合并网点开关并确认母线电压正常，再合负荷支路开关；任一环节失败即告警结束。',
+  steps:[
+    {t:'start',l:'开始'},
+    {t:'d',l:'微电网是否为停运状态',b:{w:'告警：微电网状态异常'}},
+    {t:'p',l:'合上并网点开关'},
+    {t:'d',l:'并网点开关是否合闸',b:{w:'告警：并网点开关合闸失败'}},
+    {t:'d',l:'微电网母线电压是否正常',b:{w:'告警：微电网母线异常'}},
+    {t:'p',l:'合上负荷支路开关'},
+    {t:'d',l:'负荷支路开关是否合闸',b:{w:'告警：负荷支路开关合闸失败'}},
+    {t:'end',l:'结束'}]};
+const F413={fig:'图 4.13',title:'微电网停运并网控制流程',
+  desc:'停运转并网：先合并网点开关建立母线电压，再依次合上分布式电源支路开关并网开机，最后合上负荷支路开关恢复供电。',
+  steps:[
+    {t:'start',l:'开始'},
+    {t:'d',l:'微电网是否为停运状态',b:{w:'告警：微电网状态异常'}},
+    {t:'p',l:'合上并网点开关'},
+    {t:'d',l:'微电网母线电压是否正常',b:{w:'告警：微电网母线异常'}},
+    {t:'p',l:'合上分布式电源支路开关'},
+    {t:'d',l:'分布式电源是否并网开机成功',b:{w:'告警：分布式电源并网开机失败'}},
+    {t:'p',l:'合上负荷支路开关'},
+    {t:'d',l:'负荷支路开关是否合闸',b:{w:'告警：负荷支路开关合闸失败'}},
+    {t:'end',l:'结束'}]};
+const F414={fig:'图 4.14',title:'微电网并网停运控制流程',
+  desc:'并网运行转停运：先跳开负荷支路开关，分布式电源依次停机并跳开其支路开关，最后跳开并网点开关。',
+  steps:[
+    {t:'start',l:'开始'},
+    {t:'d',l:'微电网是否为并网运行状态',b:{w:'告警：微电网状态异常'}},
+    {t:'p',l:'跳开负荷支路开关'},
+    {t:'d',l:'负荷支路开关是否分闸',b:{w:'告警：负荷支路开关拒动'}},
+    {t:'p',l:'分布式电源停机'},
+    {t:'d',l:'分布式电源是否停机',b:{w:'告警：分布式电源停机失败'}},
+    {t:'p',l:'跳开分布式电源支路开关'},
+    {t:'p',l:'跳开并网点开关'},
+    {t:'d',l:'并网点开关是否分闸',b:{w:'告警：并网点开关分闸失败'}},
+    {t:'end',l:'结束'}]};
+const F415={fig:'图 4.15',title:'微电网停运离网控制流程',
+  desc:'停运转离网（黑启动）：主电源支路合闸并以 Vf 模式启动建立母线电压，随后合上重要负荷、分布式电源并网开机，最后合上可控负荷。',
+  steps:[
+    {t:'start',l:'开始'},
+    {t:'d',l:'微电网是否为停运状态',b:{w:'告警：微电网状态异常'}},
+    {t:'p',l:'合上主电源支路开关'},
+    {t:'p',l:'主电源 Vf 模式启动'},
+    {t:'d',l:'微电网母线电压是否正常',b:{w:'告警：主电源启动失败'}},
+    {t:'p',l:'合上重要负荷支路开关'},
+    {t:'p',l:'合上分布式电源支路开关'},
+    {t:'p',l:'分布式电源并网开机'},
+    {t:'d',l:'分布式电源是否并网成功',b:{w:'告警：分布式电源并网开机失败'}},
+    {t:'p',l:'合上可控负荷支路开关'},
+    {t:'end',l:'结束'}]};
+const F416={fig:'图 4.16',title:'微电网离网停运控制流程',
+  desc:'离网运行转停运：先跳可控负荷，其他分布式电源停机并跳开其支路开关，再跳重要负荷支路，主电源停机后跳开主电源支路开关。',
+  steps:[
+    {t:'start',l:'开始'},
+    {t:'d',l:'微电网是否为离网运行状态',b:{w:'告警：微电网状态异常'}},
+    {t:'p',l:'跳开可控负荷支路开关'},
+    {t:'p',l:'除主电源外的分布式电源停机'},
+    {t:'p',l:'跳开分布式电源支路开关'},
+    {t:'p',l:'跳开重要负荷支路开关'},
+    {t:'p',l:'主电源停机'},
+    {t:'d',l:'主电源是否停机',b:{w:'告警：主电源停机失败'}},
+    {t:'p',l:'跳开主电源支路开关'},
+    {t:'d',l:'开关是否分闸',b:{w:'告警：主电源支路开关分闸失败'}},
+    {t:'end',l:'结束'}]};
+const F418={fig:'图 4.18',title:'微电网并网转离网无缝切换控制流程',
+  desc:'并网转离网无缝切换：主电源提前做好离网准备（Vf 待命），跳开未投运与可切负荷，微电网进入离网运行后若有富余出力则恢复可控负荷供电。',
+  steps:[
+    {t:'start',l:'开始'},
+    {t:'d',l:'微电网是否为并网运行状态',b:{w:'告警：微电网状态异常'}},
+    {t:'p',l:'发送主电源离网准备指令'},
+    {t:'p',l:'跳开未投运和可切负荷支路开关'},
+    {t:'d',l:'微电网是否离网运行',b:{w:'告警：主电源 Vf 控制切换失败'}},
+    {t:'d',l:'微电网是否有富余出力',b:{w:'暂不合闸，保持最小运行方式'}},
+    {t:'p',l:'合上可控负荷支路开关'},
+    {t:'end',l:'结束'}]};
+const F419={fig:'图 4.19',title:'微电网离网转并网有缝切换控制流程',
+  desc:'有缝切换：离网状态下先全部停机（短时停电），母线无压后合并网点开关由大电网建立电压，再依次恢复重要负荷与分布式电源、可控负荷。',
+  steps:[
+    {t:'start',l:'开始'},
+    {t:'d',l:'微电网是否为离网运行状态',b:{w:'告警：微电网状态异常'}},
+    {t:'p',l:'跳开可控负荷支路开关'},
+    {t:'p',l:'其他分布式电源停机'},
+    {t:'p',l:'主电源停机'},
+    {t:'d',l:'微电网母线是否无压',b:{w:'告警：微电网电源停机失败'}},
+    {t:'p',l:'合上并网点开关'},
+    {t:'d',l:'开关是否合闸',b:{w:'告警：并网点开关合闸失败'}},
+    {t:'p',l:'合上重要负荷支路开关'},
+    {t:'p',l:'分布式电源并网开机'},
+    {t:'d',l:'分布式电源是否并网成功',b:{w:'告警：分布式电源并网开机失败'}},
+    {t:'p',l:'合上可控负荷支路开关'},
+    {t:'end',l:'结束'}]};
+const F420={fig:'图 4.20',title:'微电网离网转并网无缝切换控制流程',
+  desc:'无缝切换：主电源先做并网准备，并网点同期装置检定电压、频率、相位一致后瞬间合闸，主电源立即由 Vf 切换为 PQ 模式，随后恢复未投运负荷。',
+  steps:[
+    {t:'start',l:'开始'},
+    {t:'d',l:'微电网是否为离网运行状态',b:{w:'告警：微电网状态异常'}},
+    {t:'p',l:'发送主电源离网转并网准备指令'},
+    {t:'p',l:'发送并网点开关同期合闸指令'},
+    {t:'d',l:'微电网是否并网运行',b:{w:'告警：微电网同期失败'}},
+    {t:'p',l:'合上未投运负荷支路开关'},
+    {t:'end',l:'结束'}]};
+
+let _FP=0.15;
+function FP(){return _FP;}
+document.querySelectorAll('.fp-range').forEach(el=>el.addEventListener('input',e=>{_FP=+e.target.value;}));
+initFlowPanel('panel-power',[F44,F45,F46]);
+initFlowPanel('panel-volt',[F47,F48,F49]);
+initFlowPanel('panel-switch',[F411,F412,F413,F414,F415,F416,F418,F419,F420]);
+
+/* ============================================================
+   三、运行状态机（图 4.10）
+============================================================ */
+const SM={
+  states:[
+    {id:'G', l:'并网运行', x:160,y:110},
+    {id:'S', l:'停机状态', x:450,y:110},
+    {id:'GS',l:'并网启动', x:160,y:300},
+    {id:'IS',l:'离网启动', x:760,y:300},
+    {id:'I', l:'离网运行', x:760,y:110},
+    {id:'E', l:'外部电网直供电', x:450,y:300},
+    {id:'H', l:'离网/并网切换', x:620,y:430}],
+  trans:[
+    {from:'G',to:'S',cmd:'stop',l:'停机指令'},
+    {from:'E',to:'S',cmd:'stop',l:'停机指令'},
+    {from:'I',to:'S',cmd:'stop',l:'停机指令'},
+    {from:'S',to:'GS',cmd:'gstart',l:'并网开关合上 · 重新启动命令'},
+    {from:'GS',to:'G',cmd:'gon',l:'并网启动完成（开关闭合）'},
+    {from:'S',to:'IS',cmd:'istart',l:'离网启动命令（黑启动）'},
+    {from:'IS',to:'I',cmd:'ion',l:'离网启动完成（开关闭合）'},
+    {from:'G',to:'E',cmd:'gridback',l:'分布式电源退出运行 · 接受调度指令'},
+    {from:'E',to:'I',cmd:'gridfail',l:'外部电网停电（经离网切换）'},
+    {from:'I',to:'H',cmd:'sync',l:'上级调度允许并网'},
+    {from:'H',to:'G',cmd:'syncok',l:'同期合闸完成 · 切换成功'}],
+  cmds:[
+    {k:'stop',l:'⛔ 停机指令'},
+    {k:'gstart',l:'🔁 并网重启命令'},
+    {k:'gon',l:'✅ 并网启动完成'},
+    {k:'istart',l:'🔋 黑启动命令'},
+    {k:'ion',l:'✅ 离网启动完成'},
+    {k:'gridback',l:'🌀 DG 退出 / 调度指令'},
+    {k:'gridfail',l:'⚡ 外部电网停电'},
+    {k:'sync',l:'📡 上级调度允许并网'},
+    {k:'syncok',l:'✅ 同期合闸完成'}]
+};
+let smCur='G', smVisited=new Set(['G']);
+function stName(id){return SM.states.find(s=>s.id===id).l;}
+function drawSM(){
+  const R=78, r2=36, W=940, H=520;
+  let s=`<svg viewBox="0 0 ${W} ${H}">`;
+  SM.trans.forEach((t,i)=>{
+    const a=SM.states.find(x=>x.id===t.from), b=SM.states.find(x=>x.id===t.to);
+    const dx=b.x-a.x, dy=b.y-a.y, L=Math.sqrt(dx*dx+dy*dy)||1;
+    const x1=a.x+R*dx/L, y1=a.y+r2*dy/L, x2=b.x-R*dx/L, y2=b.y-r2*dy/L;
+    const mx=(x1+x2)/2, my=(y1+y2)/2;
+    const self = t.from===t.to;
+    s+=`<path id="sm-tr-${i}" class="trans" data-tr="${i}" d="M${x1},${y1} L${x2},${y2}" marker-end="url(#sma)"/>`;
+    s+=`<text class="tlab" x="${mx}" y="${my-6}">${t.l}</text>`;
+  });
+  s+=`<defs><marker id="sma" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="#8fa3c0"/></marker></defs>`;
+  SM.states.forEach(st=>{
+    s+=`<ellipse id="sm-st-${st.id}" class="state${st.id===smCur?' cur':''}" data-st="${st.id}" cx="${st.x}" cy="${st.y}" rx="${st.l.length>5?92:R}" ry="${r2}"/>`;
+    s+=`<text class="ntxt" x="${st.x}" y="${st.y+1}" style="font-size:14px;font-weight:bold">${st.l}</text>`;
+  });
+  s+=`<text class="tlab" x="${W/2}" y="${H-8}" style="font-size:12px">图 4.10　微电网运行过程中各运行状态之间的主要切换过程（当前状态青色高亮 · 已访问状态绿色描边）</text></svg>`;
+  document.getElementById('sm-view').innerHTML=s;
+  document.getElementById('sm-events').innerHTML=SM.cmds.map(c=>`<button class="ev" data-c="${c.k}">${c.l}</button>`).join('');
+  document.querySelectorAll('#sm-events .ev').forEach(b=>b.onclick=()=>fireCmd(b.dataset.c));
+  smVisited.forEach(id=>{const e=document.getElementById('sm-st-'+id); if(e)e.classList.add('visited');});
+  const c=document.getElementById('sm-st-'+smCur); if(c)c.classList.add('cur');
+}
+function smLog(t,cls=''){const el=document.getElementById('sm-log');el.innerHTML+=`<div class="${cls}">${t}</div>`;el.scrollTop=el.scrollHeight;}
+function fireCmd(k){
+  const cmd=SM.cmds.find(c=>c.k===k).l;
+  const t=SM.trans.find(t=>t.from===smCur&&t.cmd===k);
+  if(!t){smLog(`✖ 当前状态「${stName(smCur)}」下不允许执行「${cmd}」`,'err');return;}
+  const i=SM.trans.indexOf(t);
+  const p=document.getElementById('sm-tr-'+i);
+  p.classList.add('pulse'); setTimeout(()=>p.classList.remove('pulse'),700);
+  smLog(`✅ ${stName(smCur)} ──${t.l}──▶ ${stName(t.to)}`,'ok');
+  smCur=t.to; smVisited.add(t.to);
+  drawSM();
+}
+drawSM(); smLog('💡 当前状态：并网运行。点击上方事件按钮驱动状态转移。','info');
+
+/* ============================================================
+   四、页面导航
+============================================================ */
+document.querySelectorAll('nav a').forEach(a=>{
+  a.onclick=()=>{
+    document.querySelectorAll('nav a').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
+    a.classList.add('active');
+    document.getElementById('page-'+a.dataset.page).classList.add('active');
+  };
+});
+</script>
+</body>
+</html>
